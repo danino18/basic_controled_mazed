@@ -1,17 +1,178 @@
-// Renders complete VGA frames of game_system into PPM images, exactly as the
-// board would output them (including the drawing pipeline delay).
+// Renders complete VGA frames into PPM images, exactly as the board would
+// output them (including the drawing pipeline delay).
 // Pixel colours are taken from the oVGA pins using the board wiring:
 // oVGA[7:0] -> VGA_R, [15:8] -> VGA_G, [23:16] -> VGA_B.
 //
 //   +shots=<frame>,<frame>,...   save the listed frames (no key presses)
 //   +scenario=tour               play through every screen with scripted keys
-//   +scenario=watch              the product flow: NO TRAINED AI, training (+gens=<n>), pause,
-//                                TRAINING COMPLETE, WATCH AI with the champion, SW1 overlay
-//   +scenario=train              TRAIN AI (MEDIUM, 2 corals): +sim=<level 0..7> +count=<frames> +gap=<frames>
 //   +difficulty=<0..2>           difficulty chosen in the tour (default 1)
 //   +columns=<1..3>              coral columns chosen in the tour (default 3)
 // Timers and the first coral position are shortened so a tour takes ~100 frames.
 `timescale 1ns / 1ps
+
+// Everything controlled_maze_top_struct.sv contains below the board pins,
+// PLL, precompiled keyboard block and audio codec: those three are not
+// simulatable (no ModelSim-Intel-ASE model for KBDINTF/audio_codec_controller),
+// which is exactly why this seam exists, one level below KBD_Block/the codec,
+// taking already-decoded key events instead of raw PS2 pins.
+module game_core_sim (
+    input  logic        clk,
+    input  logic        resetN,
+    input  logic [8:0]  keyCode,
+    input  logic        keyMake,
+    input  logic        keyBreak,
+    input  logic        muteSw,
+    input  logic        backN,
+    output logic [28:0] OVGA,
+    output logic [6:0]  HEX0,
+    output logic [6:0]  HEX1,
+    output logic [6:0]  HEX2,
+    output logic [6:0]  HEX3,
+    output logic [6:0]  HEX4,
+    output logic [6:0]  HEX5,
+    output logic [9:0]  LEDR,
+    output logic [15:0] audioSample
+);
+  import game_state_pkg::*, palette_pkg::*;
+
+  logic [10:0] pixelX, pixelY;
+  logic        startOfFrame;
+  color_t      screenRGB;
+
+  VGA_Controller vga (
+      .RGBIn(screenRGB), .PixelX(pixelX), .PixelY(pixelY), .startOfFrame(startOfFrame),
+      .oVGA(OVGA), .address(), .clk(clk), .resetN(resetN));
+
+  logic tickMove, tickCheck, tickState;
+
+  frame_sequencer sequencer (
+      .clk(clk), .resetN(resetN), .startOfFrame(startOfFrame),
+      .tickMove(tickMove), .tickCheck(tickCheck), .tickState(tickState));
+
+  logic blink;
+  frame_blink blinker (.clk(clk), .resetN(resetN), .startOfFrame(startOfFrame), .blink(blink));
+
+  logic upHeld, downHeld, upPulse, downPulse, enterPulse, speedUpHeld, speedDownHeld;
+
+  key_input keys (
+      .clk(clk), .resetN(resetN), .keyCode(keyCode), .keyMake(keyMake), .keyBreak(keyBreak),
+      .upHeld(upHeld), .downHeld(downHeld), .upPulse(upPulse), .downPulse(downPulse),
+      .enterPulse(enterPulse), .speedUpHeld(speedUpHeld), .speedDownHeld(speedDownHeld));
+
+  logic backPulse;
+  button_pulse #(.STABLE_CLOCKS(20)) backButton (
+      .clk(clk), .resetN(resetN), .buttonN(backN), .pressed(), .pulse(backPulse));
+
+  logic entropyPulse;
+  assign entropyPulse = upPulse || downPulse || enterPulse || backPulse;
+
+  logic [2:0] screen;
+  logic [1:0] difficulty, columnCount, menuCursor;
+  logic [7:0] stateFrames;
+  logic       birdRun, birdRestart;
+  logic [1:0] birdMode;
+  logic       birdSeedLoad;
+  logic [15:0] birdSeed;
+  logic signed [9:0] mazeOffset;
+  logic signed [4:0] mazeVy;
+  logic [game_params_pkg::NUM_COLUMNS-1:0]       colActive, hitColumn;
+  logic [game_params_pkg::NUM_COLUMNS-1:0][10:0] colX;
+  logic [game_params_pkg::NUM_COLUMNS-1:0][8:0]  gapBase;
+  logic [game_params_pkg::NUM_COLUMNS-1:0][9:0]  gapTop, gapBottom;
+  logic       collision;
+  logic [2:0][3:0] score, best;
+  logic       newBest;
+  logic [2:0] speedLevel;
+  logic       scoreEvent, failEvent;
+  logic signed [10:0] birdY;
+
+  game_logic gameLogic (
+      .clk(clk), .resetN(resetN), .tickMove(tickMove), .tickCheck(tickCheck), .tickState(tickState),
+      .upHeld(upHeld), .downHeld(downHeld), .upPulse(upPulse), .downPulse(downPulse),
+      .enterPulse(enterPulse), .speedUpHeld(speedUpHeld), .speedDownHeld(speedDownHeld),
+      .entropyPulse(entropyPulse), .abort(backPulse), .speedLoad(1'b0), .speedLoadLevel(3'd0),
+      .birdY(birdY),
+      .screen(screen), .difficulty(difficulty), .columnCount(columnCount), .menuCursor(menuCursor),
+      .stateFrames(stateFrames),
+      .birdRun(birdRun), .birdRestart(birdRestart), .birdMode(birdMode),
+      .birdSeedLoad(birdSeedLoad), .birdSeed(birdSeed),
+      .mazeOffset(mazeOffset), .mazeVy(mazeVy), .colActive(colActive), .colX(colX), .gapBase(gapBase),
+      .gapTop(gapTop), .gapBottom(gapBottom), .collision(collision), .hitColumn(hitColumn),
+      .score(score), .best(best), .newBest(newBest), .speedLevel(speedLevel),
+      .scoreEvent(scoreEvent), .failEvent(failEvent));
+
+  logic inMenu, crashed, flash;
+  assign inMenu  = (screen == ST_MENU_DIFF) || (screen == ST_MENU_OBST);
+  assign crashed = (screen == ST_HIT) || (screen == ST_GAME_OVER);
+  assign flash   = (screen == ST_HIT) && (stateFrames < 8'd8);
+
+  logic [game_params_pkg::NUM_COLUMNS-1:0] coralShown;
+  assign coralShown = inMenu ? '0 : colActive;
+
+  logic   birdDR;
+  color_t birdRGB;
+
+  Bird_Block bird (
+      .clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY),
+      .tick(tickMove), .run(birdRun), .restart(birdRestart), .mode(birdMode),
+      .seedLoad(birdSeedLoad), .seed(birdSeed),
+      .animate(!crashed), .blink(screen == ST_HIT),
+      .drawingRequest(birdDR), .RGBout(birdRGB), .birdY(birdY));
+
+  logic   coralDR;
+  color_t coralRGB;
+
+  Coral_Block coral (
+      .clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY),
+      .active(coralShown), .colX(colX), .gapTop(gapTop), .gapBottom(gapBottom),
+      .drawingRequest(coralDR), .RGBout(coralRGB));
+
+  color_t waterRGB;
+  water_background water (.clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY), .RGBout(waterRGB));
+
+  logic   textDR;
+  color_t textRGB;
+  text_draw text (
+      .clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY), .screen(screen),
+      .menuCursor(menuCursor), .scoreDigits(score), .bestDigits(best), .newBest(newBest),
+      .blink(blink), .drawingRequest(textDR), .RGBout(textRGB));
+
+  logic   speedDR;
+  color_t speedRGB;
+  speed_readout speedReadout (
+      .clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY), .screen(screen),
+      .speedLevel(speedLevel), .drawingRequest(speedDR), .RGBout(speedRGB));
+
+  logic   panelDR;
+  color_t panelRGB;
+  ui_panels panels (
+      .clk(clk), .resetN(resetN), .pixelX(pixelX), .pixelY(pixelY), .screen(screen),
+      .menuCursor(menuCursor), .flash(flash), .drawingRequest(panelDR), .RGBout(panelRGB));
+
+  objects_mux mux (
+      .clk(clk), .resetN(resetN),
+      .speedDrawingRequest(speedDR), .speedRGB(speedRGB),
+      .textDrawingRequest(textDR), .textRGB(textRGB),
+      .panelDrawingRequest(panelDR), .panelRGB(panelRGB),
+      .birdDrawingRequest(birdDR), .birdRGB(birdRGB),
+      .coralDrawingRequest(coralDR), .coralRGB(coralRGB),
+      .backgroundRGB(waterRGB), .RGBOut(screenRGB));
+
+  logic [2:0][3:0] lowOn, highOn;
+  leading_zero_blank #(.DIGITS(3)) lowBlank (.digits(score), .digitOn(lowOn));
+  leading_zero_blank #(.DIGITS(3)) highBlank(.digits(best),  .digitOn(highOn));
+
+  hex_display_top hex (
+      .clk(clk), .resetN(resetN), .digits({best, score}), .digitOn({highOn, lowOn}),
+      .HEX0(HEX0), .HEX1(HEX1), .HEX2(HEX2), .HEX3(HEX3), .HEX4(HEX4), .HEX5(HEX5));
+
+  sound_engine sound (
+      .clk(clk), .resetN(resetN), .scoreTrigger(scoreEvent), .failTrigger(failEvent),
+      .mute(muteSw), .audioSample(audioSample), .playingScore(), .playingFail());
+
+  assign LEDR = {blink, columnCount, difficulty, screen, resetN, 1'b1};
+
+endmodule
 
 module tb_render;
   import game_state_pkg::*;
@@ -24,16 +185,15 @@ module tb_render;
   logic        keyMake = 1'b0;
   logic        keyBreak = 1'b0;
   logic        muteSw = 1'b0;
-  logic        debugSw = 1'b0;
   logic        backN = 1'b1;
   logic [28:0] ovga;
   logic [6:0]  hex0, hex1, hex2, hex3, hex4, hex5;
   logic [9:0]  ledr;
   logic [15:0] audioSample;
 
-  game_system dut (
+  game_core_sim dut (
       .clk(clk), .resetN(resetN), .keyCode(keyCode), .keyMake(keyMake), .keyBreak(keyBreak),
-      .muteSw(muteSw), .debugSw(debugSw), .backN(backN),
+      .muteSw(muteSw), .backN(backN),
       .OVGA(ovga), .HEX0(hex0), .HEX1(hex1), .HEX2(hex2), .HEX3(hex3), .HEX4(hex4), .HEX5(hex5),
       .LEDR(ledr), .audioSample(audioSample));
 
@@ -41,7 +201,6 @@ module tb_render;
   defparam dut.gameLogic.HIT_FRAMES       = 10;
   defparam dut.gameLogic.OVER_LOCK_FRAMES = 2;
   defparam dut.gameLogic.FIRST_X          = 250;
-  defparam dut.BUTTON_STABLE_CLOCKS         = 20;
 
   localparam logic [8:0] KEY_UP = 9'h175, KEY_DOWN = 9'h172, KEY_ENTER = 9'h05A;
 
@@ -97,131 +256,41 @@ module tb_render;
     wait_frames(1);
   endtask
 
+  // The game now boots straight into the difficulty menu (no mode-selection
+  // screen, since HUMAN PLAY is the only mode left).
   task automatic tour();
     int difficulty, columns;
     if (!$value$plusargs("difficulty=%d", difficulty)) difficulty = 1;
     if (!$value$plusargs("columns=%d", columns)) columns = 3;
 
     wait_frames(3);
-    capture("tour_0_mode_menu.ppm");
-    press(KEY_ENTER);                        // HUMAN PLAY
-    wait_frames(1);
-    capture("tour_1_menu_difficulty.ppm");
+    capture("tour_0_menu_difficulty.ppm");
     repeat (difficulty) press(KEY_DOWN);
     press(KEY_ENTER);
     repeat (columns - 1) press(KEY_DOWN);
-    capture("tour_2_menu_obstacles.ppm");
+    capture("tour_1_menu_obstacles.ppm");
     press(KEY_ENTER);
     wait_frames(3);
-    capture("tour_3_get_ready.ppm");
+    capture("tour_2_get_ready.ppm");
     wait (dut.screen == ST_PLAY);
     // steer the maze upwards for a few frames, then let the bird crash
     key_event(KEY_UP, 0);
     wait_frames(12);
     key_event(KEY_UP, 1);
     wait_frames(8);
-    capture("tour_4_play.ppm");
+    capture("tour_3_play.ppm");
     // the crash may already have happened while steering
     wait (dut.screen == ST_HIT || dut.screen == ST_GAME_OVER);
-    if (dut.screen == ST_HIT) capture("tour_5_hit_flash.ppm");
+    if (dut.screen == ST_HIT) capture("tour_4_hit_flash.ppm");
     wait (dut.screen == ST_GAME_OVER);
     wait_frames(3);
-    capture("tour_6_game_over.ppm");
+    capture("tour_5_game_over.ppm");
     press(KEY_DOWN);
-    capture("tour_7_game_over_main_menu.ppm");
+    capture("tour_6_game_over_main_menu.ppm");
     press(KEY_ENTER);
     wait_frames(3);
-    capture("tour_8_back_to_mode_menu.ppm");
-    // TRAIN AI setup and the training screen; NO TRAINED AI is covered by tb_mode_fsm
-    press(KEY_DOWN);
-    press(KEY_ENTER);
-    wait_frames(3);
-    capture("tour_9_train_setup.ppm");
-    press(KEY_ENTER);
-    press(KEY_DOWN);
-    press(KEY_ENTER);
-    wait_frames(3);
-    capture("tour_10_training.ppm");
-    // KEY1: pause menu; DISCARD RUN goes back to the mode menu
-    backN = 1'b0;
-    repeat (100) @(negedge clk);
-    backN = 1'b1;
-    wait_frames(3);
-    capture("tour_11_pause_menu.ppm");
-    press(KEY_DOWN);
-    press(KEY_DOWN);
-    press(KEY_ENTER);
-    wait_frames(3);
-    capture("tour_12_back_from_training.ppm");
-    if (dut.mode != 0) $display("FAIL: DISCARD RUN did not leave the training screen");
-  endtask
-
-  // TRAIN AI at a given simulation speed: frames of the real lanes
-  logic [2:0] forcedSim = 3'd7;
-
-  task automatic train();
-    int level, shots, gap;
-    if (!$value$plusargs("sim=%d", level)) level = 7;
-    forcedSim = 3'(level);
-    if (!$value$plusargs("count=%d", shots)) shots = 4;
-    if (!$value$plusargs("gap=%d", gap)) gap = 3;
-    wait_frames(3);
-    press(KEY_DOWN);                         // TRAIN AI
-    press(KEY_ENTER);
-    press(KEY_DOWN);                         // MEDIUM
-    press(KEY_ENTER);
-    press(KEY_DOWN);                         // 2 corals
-    press(KEY_ENTER);
-    force dut.simLevel = forcedSim;         // holding Numpad 4 would take 12 frames per level
-    for (int i = 0; i < shots; i++) begin
-      wait_frames(gap);
-      capture($sformatf("train_%0d.ppm", i + 1));
-    end
-  endtask
-
-  // The product flow: nothing trained, NO TRAINED AI, train (MEDIUM, 2 corals,
-  // SIM MAX) for +gens=<n> generations, pause, KEEP THE BEST, TRAINING
-  // COMPLETE, WATCH AI with the champion, SW1 debug overlay, back to the menu.
-  task automatic watch();
-    int gens;
-    if (!$value$plusargs("gens=%d", gens)) gens = 4;
-    wait_frames(3);
-    press(KEY_DOWN);
-    press(KEY_DOWN);
-    capture("watch_1_mode_menu_untrained.ppm");
-    press(KEY_ENTER);                        // WATCH AI: nothing trained yet
-    wait_frames(3);
-    capture("watch_2_no_trained_ai.ppm");
-    press(KEY_ENTER);                        // TRAIN AI
-    press(KEY_DOWN);                         // MEDIUM
-    press(KEY_ENTER);
-    press(KEY_DOWN);                         // 2 corals
-    press(KEY_ENTER);
-    force dut.simLevel = 3'd7;
-    wait (dut.trainer.ctrl.gen == gens);
-    press(KEY_ENTER);                        // pause menu
-    wait_frames(3);
-    capture("watch_3_pause_menu.ppm");
-    press(KEY_DOWN);
-    press(KEY_ENTER);                        // KEEP THE BEST
-    wait (dut.trainComplete);
-    wait_frames(3);
-    capture("watch_4_training_complete.ppm");
-    release dut.simLevel;
-    press(KEY_ENTER);                        // WATCH AI
-    wait (dut.screen == ST_PLAY);
-    wait_frames(40);
-    capture("watch_5_trained_ai_playing.ppm");
-    debugSw = 1'b1;
-    wait_frames(4);
-    capture("watch_6_ai_debug.ppm");
-    debugSw = 1'b0;
-    backN = 1'b0;
-    repeat (100) @(negedge clk);
-    backN = 1'b1;
-    wait_frames(3);
-    capture("watch_7_mode_menu_trained.ppm");
-    if (dut.mode != 0) $display("FAIL: KEY1 did not return to the mode menu");
+    capture("tour_7_back_to_difficulty_menu.ppm");
+    if (dut.screen != ST_MENU_DIFF) $display("FAIL: MAIN MENU did not return to the difficulty menu");
   endtask
 
   initial begin
@@ -235,10 +304,6 @@ module tb_render;
 
     if ($value$plusargs("scenario=%s", scenario) && scenario == "tour") begin
       tour();
-    end else if (scenario == "watch") begin
-      watch();
-    end else if (scenario == "train") begin
-      train();
     end else begin
       if (!$value$plusargs("shots=%s", shots)) shots = "2";
       pos = 0;

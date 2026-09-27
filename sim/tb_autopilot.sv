@@ -46,6 +46,10 @@ module tb_autopilot;
   logic                         newBest;
   logic [2:0]                   speedLevel;
   logic                         scoreEvent, failEvent;
+  logic                         birdRun, birdRestart;
+  logic [1:0]                   birdMode;
+  logic                         birdSeedLoad;
+  logic [15:0]                  birdSeed;
 
   // World speed is untouched here (0,0 keeps it at its reset default, 2 -> the
   // same 2.0 px/frame this testbench's assertions were written against);
@@ -54,16 +58,42 @@ module tb_autopilot;
       .clk(clk), .resetN(resetN), .tickMove(tickMove), .tickCheck(tickCheck), .tickState(tickState),
       .upHeld(upHeld), .downHeld(downHeld), .upPulse(upPulse), .downPulse(downPulse),
       .enterPulse(enterPulse), .speedUpHeld(1'b0), .speedDownHeld(1'b0),
-      .entropyPulse(enterPulse),
-      .aiMode(1'b0), .aiUp(1'b0), .aiDown(1'b0), .aiValid(1'b0),
-      .trainMode(1'b0), .autoStart(1'b0), .autoDifficulty(2'd0), .autoColumns(2'd1), .abort(1'b0),
-      .speedLoad(1'b0), .speedLoadLevel(3'd0), .trainStart(), .mazeVy(), .gapBase(),
+      .entropyPulse(enterPulse), .abort(1'b0),
+      .speedLoad(1'b0), .speedLoadLevel(3'd0), .mazeVy(), .gapBase(),
+      .birdY(birdY),
       .screen(screen), .difficulty(difficulty), .columnCount(columnCount), .menuCursor(menuCursor),
-      .stateFrames(stateFrames), .birdY(birdY), .birdVy(birdVy), .birdTrajState(birdTrajState),
+      .stateFrames(stateFrames),
+      .birdRun(birdRun), .birdRestart(birdRestart), .birdMode(birdMode),
+      .birdSeedLoad(birdSeedLoad), .birdSeed(birdSeed),
       .mazeOffset(mazeOffset), .colActive(colActive), .colX(colX), .gapTop(gapTop),
       .gapBottom(gapBottom), .collision(collision), .hitColumn(hitColumn), .score(score),
       .best(best), .newBest(newBest), .speedLevel(speedLevel),
       .scoreEvent(scoreEvent), .failEvent(failEvent));
+
+  // Bird_Block's non-drawing half, standing in for the real top-level object.
+  logic [15:0] birdRnd;
+
+  lfsr_rng birdRng (
+      .clk     (clk),
+      .resetN  (resetN),
+      .step    (tickMove),
+      .seedLoad(birdSeedLoad),
+      .seed    ({birdSeed[7:0], birdSeed[15:8]} ^ 16'h5A5A),
+      .rnd     (birdRnd)
+  );
+
+  bird_trajectory birdTraj (
+      .clk      (clk),
+      .resetN   (resetN),
+      .tick     (tickMove),
+      .run      (birdRun),
+      .restart  (birdRestart),
+      .mode     (birdMode),
+      .rnd      (birdRnd),
+      .birdY    (birdY),
+      .birdVy   (birdVy),
+      .trajState(birdTrajState)
+  );
 
   int errors = 0;
   bit autopilot = 1'b0;

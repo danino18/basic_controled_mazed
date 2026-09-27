@@ -1,5 +1,5 @@
 // Checks game_fsm through every state and transition (report module #1),
-// plus the AI-mode inputs: training setup, automatic start and abort.
+// plus abort (back to the first menu from any screen).
 `timescale 1ns / 1ps
 
 module tb_game_fsm;
@@ -15,19 +15,17 @@ module tb_game_fsm;
   logic [2:0] state;
   logic [1:0] difficulty, columnCount, menuCursor;
   logic [7:0] stateFrames;
-  logic       roundStart, roundOver, menuStart, trainStart;
-  logic       trainMode = 1'b0, autoStart = 1'b0, abort = 1'b0;
-  logic [1:0] autoDifficulty = 2'd0, autoColumns = 2'd1;
+  logic       roundStart, roundOver, menuStart;
+  logic       abort = 1'b0;
 
   game_fsm #(.READY_FRAMES(READY), .HIT_FRAMES(HIT), .OVER_LOCK_FRAMES(LOCK)) dut (
       .clk(clk), .resetN(resetN), .tick(tick), .upPulse(upPulse), .downPulse(downPulse),
-      .enterPulse(enterPulse), .collision(collision), .trainMode(trainMode), .autoStart(autoStart),
-      .autoDifficulty(autoDifficulty), .autoColumns(autoColumns), .abort(abort), .state(state), .difficulty(difficulty),
+      .enterPulse(enterPulse), .collision(collision), .abort(abort), .state(state), .difficulty(difficulty),
       .columnCount(columnCount), .menuCursor(menuCursor), .stateFrames(stateFrames),
-      .roundStart(roundStart), .roundOver(roundOver), .menuStart(menuStart), .trainStart(trainStart));
+      .roundStart(roundStart), .roundOver(roundOver), .menuStart(menuStart));
 
   int errors = 0;
-  int starts = 0, overs = 0, menus = 0, trains = 0;
+  int starts = 0, overs = 0, menus = 0;
   int visits [6];
   logic [2:0] lastState = ST_MENU_DIFF;
 
@@ -35,7 +33,6 @@ module tb_game_fsm;
     if (roundStart) starts++;
     if (roundOver) overs++;
     if (menuStart) menus++;
-    if (trainStart) trains++;
   end
 
   always @(negedge clk) begin
@@ -153,34 +150,13 @@ module tb_game_fsm;
     pulse(enterPulse);
     if (menuCursor != 2) fail("obstacle cursor not on the previous choice (3)");
 
-    // ---- training setup: Enter on the obstacle menu only records the world
-    trainMode = 1'b1;
-    pulse(upPulse);                                      // 2 corals
-    starts = 0; trains = 0;
-    pulse(enterPulse);
-    expect_state(ST_MENU_DIFF, "training world chosen");
-    if (trains != 1 || starts != 0) fail($sformatf("training setup: %0d train / %0d round pulses", trains, starts));
-    if (columnCount != 2) fail("training setup did not record 2 corals");
-    if (menuCursor != DIFF_MEDIUM) fail("training setup: cursor not back on the difficulty");
-    frames(3);
-    if (trains != 1) fail("extra training pulses");
-    trainMode = 1'b0;
-
-    // ---- automatic start (WATCH AI): only on a tick, with the given settings
-    autoDifficulty = DIFF_HARD;
-    autoColumns = 2'd3;
+    // ---- a normal round, to reach PLAY for the abort test below
     starts = 0;
-    @(negedge clk);
-    autoStart = 1'b1;
-    repeat (3) @(negedge clk);
-    expect_state(ST_MENU_DIFF, "autoStart without a tick");
-    frames(1);
-    autoStart = 1'b0;
-    expect_state(ST_READY, "autoStart");
-    if (difficulty != DIFF_HARD || columnCount != 3) fail("autoStart settings not taken");
-    if (starts != 1) fail($sformatf("autoStart gave %0d round starts", starts));
+    pulse(enterPulse);
+    expect_state(ST_READY, "Enter on the obstacle menu");
+    if (starts != 1) fail($sformatf("%0d round starts, expected 1", starts));
     frames(READY);
-    expect_state(ST_PLAY, "after an automatic start");
+    expect_state(ST_PLAY, "after READY");
 
     // ---- abort from PLAY: back to the first menu, no crash sound
     overs = 0; menus = 0;
@@ -191,7 +167,7 @@ module tb_game_fsm;
     @(negedge clk);
     expect_state(ST_MENU_DIFF, "abort from PLAY");
     if (overs != 0 || menus != 1) fail("abort pulses wrong");
-    if (menuCursor != DIFF_HARD) fail("abort: cursor not on the difficulty");
+    if (menuCursor != DIFF_MEDIUM) fail("abort: cursor not on the difficulty");
     // abort from the obstacle menu
     pulse(enterPulse);
     expect_state(ST_MENU_OBST, "before abort from the obstacle menu");

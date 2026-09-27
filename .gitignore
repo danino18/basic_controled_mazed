@@ -12,7 +12,6 @@ simulation/
 *.done
 *.jdi
 *.pin
-*.sof
 *.pof
 *.sld
 *.qws

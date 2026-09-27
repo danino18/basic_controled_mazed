@@ -1,12 +1,15 @@
-// All game rules, with no knowledge of pixels: game flow, bird motion, maze
-// steering, coral columns, collision and score. Driven by the three per-frame
-// ticks, so the same module can run behind the VGA display or be stepped much
-// faster than real time by a testbench or by the on-chip trainer.
+// All game rules, with no knowledge of pixels: game flow, maze steering, coral
+// columns, collision and score. Driven by the three per-frame ticks, so the
+// same module can run behind the VGA display or be stepped much faster than
+// real time by a testbench.
 //
-// The world (bird and coral columns) lives in world_engine and the player's
-// part (maze offset, openings, collision) in lane_engine. The on-chip trainer
-// instantiates exactly these two modules, so training and the visible game
-// follow the same rules.
+// The bird's own autonomous motion lives in Bird_Block (a top-level object,
+// matching the course's Smiley_Block_T owning its own physics); this module
+// only takes the bird's current position as an input for collision, and
+// drives Bird_Block's run/restart/mode/seed the same way it drives the coral
+// world below. The coral columns' player-independent motion lives in
+// world_engine and the player's part (maze offset, openings, collision) in
+// lane_engine.
 
 module game_logic
   import game_params_pkg::*, game_state_pkg::*;
@@ -31,23 +34,12 @@ module game_logic
     input  logic                         speedUpHeld,
     input  logic                         speedDownHeld,
     input  logic                         entropyPulse,   // any key press: latches the random seed
-
-    // AI steering (see control_mux); the AI only steers in PLAY, so every
-    // round starts from a centred maze exactly as in on-chip training
-    input  logic                         aiMode,
-    input  logic                         aiUp,
-    input  logic                         aiDown,
-    input  logic                         aiValid,
-
-    // mode control (mode_fsm)
-    input  logic                         trainMode,      // the menus choose the training world
-    input  logic                         autoStart,      // start a round with the settings below
-    input  logic [1:0]                   autoDifficulty,
-    input  logic [1:0]                   autoColumns,
     input  logic                         abort,          // back to the first menu
     input  logic                         speedLoad,      // set the world speed level
     input  logic [2:0]                   speedLoadLevel,
-    output logic                         trainStart,     // one clock: training world chosen
+
+    // the bird's current position, from Bird_Block (for collision only)
+    input  logic signed [10:0]           birdY,
 
     // game flow
     output logic [2:0]                   screen,
@@ -56,10 +48,15 @@ module game_logic
     output logic [1:0]                   menuCursor,
     output logic [7:0]                   stateFrames,
 
+    // drives to Bird_Block: same run/restart/mode/seed shape as world_engine
+    // below, so the bird and the coral world stay in lockstep
+    output logic                         birdRun,
+    output logic                         birdRestart,
+    output logic [1:0]                   birdMode,
+    output logic                         birdSeedLoad,
+    output logic [15:0]                  birdSeed,
+
     // world state
-    output logic signed [10:0]           birdY,
-    output logic signed [11:0]           birdVy,
-    output logic [7:0]                   birdTrajState,
     output logic signed [9:0]            mazeOffset,
     output logic signed [4:0]            mazeVy,
     output logic [NUM_COLUMNS-1:0]       colActive,
@@ -78,7 +75,7 @@ module game_logic
     // world/coral scroll speed (Numpad 4/6)
     output logic [2:0]                   speedLevel,
 
-    // raw one-clock events for sound_engine (game_system): tied to the exact
+    // raw one-clock events for sound_engine (in the top level): tied to the exact
     // same pulses that award the point and commit the round, so a sound
     // cannot fire without its matching game event, or vice versa
     output logic                         scoreEvent,
@@ -102,10 +99,6 @@ module game_logic
       .downPulse  (downPulse),
       .enterPulse (enterPulse),
       .collision  (collision),
-      .trainMode  (trainMode),
-      .autoStart  (autoStart),
-      .autoDifficulty(autoDifficulty),
-      .autoColumns(autoColumns),
       .abort      (abort),
       .state      (screen),
       .difficulty (difficulty),
@@ -114,8 +107,7 @@ module game_logic
       .stateFrames(stateFrames),
       .roundStart (roundStart),
       .roundOver  (roundOver),
-      .menuStart  (menuStart),
-      .trainStart (trainStart)
+      .menuStart  (menuStart)
   );
 
   // The round restarts one clock after the seeds are loaded, so the first coral
@@ -127,13 +119,6 @@ module game_logic
     if (!resetN) roundStartD <= 1'b0;
     else         roundStartD <= roundStart;
   end
-
-  logic inMenu, worldRun, steerRun, birdRun;
-
-  assign inMenu   = (screen == ST_MENU_DIFF) || (screen == ST_MENU_OBST);
-  assign worldRun = (screen == ST_PLAY);
-  assign steerRun = (screen == ST_PLAY) || (screen == ST_READY);   // the player may line up the coral while getting ready
-  assign birdRun  = worldRun || inMenu;                               // the bird bobs behind the menus
 
   // ---------------------------------------------------------------- randomness
   // The supplied random.sv latches a free-running counter on every key press;
@@ -147,6 +132,17 @@ module game_logic
       .rise  (entropyPulse),
       .dout  (entropy)
   );
+
+  logic inMenu, worldRun, steerRun;
+
+  assign inMenu   = (screen == ST_MENU_DIFF) || (screen == ST_MENU_OBST);
+  assign worldRun = (screen == ST_PLAY);
+  assign steerRun = (screen == ST_PLAY) || (screen == ST_READY);   // the player may line up the coral while getting ready
+  assign birdRun  = worldRun || inMenu;                               // the bird bobs behind the menus
+  assign birdRestart = roundStartD || menuStart;
+  assign birdMode     = inMenu ? DIFF_EASY : difficulty;
+  assign birdSeedLoad = roundStart;
+  assign birdSeed     = entropy;
 
   // ---------------------------------------------------------------- world/coral scroll speed
   logic [11:0] worldStep;
@@ -163,46 +159,27 @@ module game_logic
       .worldStep    (worldStep)
   );
 
-  // ---------------------------------------------------------------- world: bird and coral columns
+  // ---------------------------------------------------------------- world: coral columns
   logic scorePulse;
 
   world_engine #(.FIRST_X(FIRST_X)) world (
-      .clk          (clk),
-      .resetN       (resetN),
-      .tickMove     (tickMove),
-      .tickCheck    (tickCheck),
-      .seedLoad     (roundStart),
-      .seed         (entropy),
-      .restart      (roundStartD),
-      .birdReset    (menuStart),
-      .birdRun      (birdRun),
-      .worldRun     (worldRun),
-      .birdMode     (inMenu ? DIFF_EASY : difficulty),
-      .columnCount  (columnCount),
-      .worldStep    (worldStep),
-      .birdY        (birdY),
-      .birdVy       (birdVy),
-      .birdTrajState(birdTrajState),
-      .colActive    (colActive),
-      .colX         (colX),
-      .gapBase      (gapBase),
-      .passPulse    (scorePulse)
+      .clk        (clk),
+      .resetN     (resetN),
+      .tickMove   (tickMove),
+      .tickCheck  (tickCheck),
+      .seedLoad   (roundStart),
+      .seed       (entropy),
+      .restart    (roundStartD),
+      .worldRun   (worldRun),
+      .columnCount(columnCount),
+      .worldStep  (worldStep),
+      .colActive  (colActive),
+      .colX       (colX),
+      .gapBase    (gapBase),
+      .passPulse  (scorePulse)
   );
 
   // ---------------------------------------------------------------- player: maze, openings, collision
-  logic ctrlUp, ctrlDown;
-
-  control_mux steering (
-      .aiMode  (aiMode),
-      .kbdUp   (upHeld),
-      .kbdDown (downHeld),
-      .aiUp    (aiUp),
-      .aiDown  (aiDown),
-      .aiValid (aiValid && worldRun),
-      .ctrlUp  (ctrlUp),
-      .ctrlDown(ctrlDown)
-  );
-
   lane_engine lane (
       .clk       (clk),
       .resetN    (resetN),
@@ -210,8 +187,8 @@ module game_logic
       .tickCheck (tickCheck),
       .steerRun  (steerRun),
       .restart   (roundStartD),
-      .moveUp    (ctrlUp),
-      .moveDown  (ctrlDown),
+      .moveUp    (upHeld),
+      .moveDown  (downHeld),
       .birdY     (birdY),
       .colActive (colActive),
       .colX      (colX),

@@ -3,9 +3,9 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSXFC6D6F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY controlled_maze_top
+set_global_assignment -name TOP_LEVEL_ENTITY controlled_maze_top_struct
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.0.0
-set_global_assignment -name LAST_QUARTUS_VERSION "17.0.0 Lite Edition"
+set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Lite Edition"
 set_global_assignment -name PROJECT_OUTPUT_DIRECTORY output_files
 set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
@@ -43,25 +43,23 @@ set_global_assignment -name QXP_FILE KBDINTF.qxp
 set_global_assignment -name VERILOG_FILE RTL/KEYBOARDX/kbd_wrapper.v
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/singleKeyDecoder.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/random.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/KBD_Block.sv
 
 # ---- project sources (packages first)
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/PKG/palette_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/PKG/game_params_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/PKG/game_state_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/PKG/text_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/PKG/ui_pkg.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/ml_pkg.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/reset_sync.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/bcd_counter.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/leading_zero_blank.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/lfsr_rng.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/button_pulse.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/COMMON/frame_blink.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DEBUG/fps_meter.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/DEBUG/train_probe.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/frame_sequencer.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/game_fsm.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/key_input.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/control_mux.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/maze_control.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/bird_trajectory.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/column_track.sv
@@ -74,34 +72,22 @@ set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/score_bcd.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/world_speed_control.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/sound_engine.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/GAME/game_logic.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/feature_world.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/feature_lane.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/nn_sched.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/nn_datapath.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/ai_player.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/world_seeds.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/xorshift32.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/top8_list.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/sim_throttle.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/train_lane.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/train_lanes.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/train_ctrl.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/ML/train_top.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/water_background.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/birdBitMap.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/bird_draw.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/bird_anim.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/Bird_Block.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/coral_draw.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/Coral_Block.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/text_draw.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/speed_readout.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/ui_panels.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/lane_view_draw.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/chart_draw.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/objects_mux_top.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/objects_mux.sv
 set_global_assignment -name SYSTEMVERILOG_FILE RTL/DRAW/hex_display_top.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/UI/char_screen.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/UI/mode_fsm.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/TOP/game_system.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/TOP/controlled_maze_top.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/TOP/controlled_maze_top_struct.sv
+set_global_assignment -name BDF_FILE RTL/TOP/controlled_maze_top.bdf
+set_global_assignment -name BDF_FILE RTL/DRAW/Bird_Block.bdf
+set_global_assignment -name BDF_FILE RTL/DRAW/Coral_Block.bdf
+set_global_assignment -name BDF_FILE RTL/KEYBOARDX/KBD_Block.bdf
 
 set_global_assignment -name SDC_FILE constraints/controlled_maze.sdc
 
@@ -298,9 +284,6 @@ set_location_assignment PIN_Y24 -to AUD_I2C_SCLK
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_I2C_SCLK
 set_location_assignment PIN_Y23 -to AUD_I2C_SDAT
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUD_I2C_SDAT
-# ---- sw1
-set_location_assignment PIN_Y27 -to SW1
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SW1
 # ---- key1
 set_location_assignment PIN_AK4 -to backN_pin
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to backN_pin

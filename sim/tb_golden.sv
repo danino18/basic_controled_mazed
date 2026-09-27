@@ -57,21 +57,54 @@ module tb_golden;
   logic                         newBest;
   logic [2:0]                   speedLevel;
   logic                         scoreEvent, failEvent;
+  logic                         birdRun, birdRestart;
+  logic [1:0]                   birdMode;
+  logic                         birdSeedLoad;
+  logic [15:0]                  birdSeed;
 
   game_logic #(.READY_FRAMES(10), .HIT_FRAMES(10), .OVER_LOCK_FRAMES(3)) dut (
       .clk(clk), .resetN(resetN), .tickMove(tickMove), .tickCheck(tickCheck), .tickState(tickState),
       .upHeld(upHeld), .downHeld(downHeld), .upPulse(upPulse), .downPulse(downPulse),
       .enterPulse(enterPulse), .speedUpHeld(speedUpHeld), .speedDownHeld(speedDownHeld),
-      .entropyPulse(enterPulse),
-      .aiMode(1'b0), .aiUp(1'b0), .aiDown(1'b0), .aiValid(1'b0),
-      .trainMode(1'b0), .autoStart(1'b0), .autoDifficulty(2'd0), .autoColumns(2'd1), .abort(1'b0),
-      .speedLoad(1'b0), .speedLoadLevel(3'd0), .trainStart(), .mazeVy(), .gapBase(),
+      .entropyPulse(enterPulse), .abort(1'b0),
+      .speedLoad(1'b0), .speedLoadLevel(3'd0), .mazeVy(), .gapBase(),
+      .birdY(birdY),
       .screen(screen), .difficulty(difficulty), .columnCount(columnCount), .menuCursor(menuCursor),
-      .stateFrames(stateFrames), .birdY(birdY), .birdVy(birdVy), .birdTrajState(birdTrajState),
+      .stateFrames(stateFrames),
+      .birdRun(birdRun), .birdRestart(birdRestart), .birdMode(birdMode),
+      .birdSeedLoad(birdSeedLoad), .birdSeed(birdSeed),
       .mazeOffset(mazeOffset), .colActive(colActive), .colX(colX), .gapTop(gapTop),
       .gapBottom(gapBottom), .collision(collision), .hitColumn(hitColumn), .score(score),
       .best(best), .newBest(newBest), .speedLevel(speedLevel),
       .scoreEvent(scoreEvent), .failEvent(failEvent));
+
+  // Bird_Block's non-drawing half, standing in for the real top-level object
+  // block: same LFSR derivation and bird_trajectory instance, wired to
+  // game_logic's birdRun/birdRestart/birdMode/birdSeedLoad/birdSeed the same
+  // way the real top level would, so the golden hashes stay reproducible.
+  logic [15:0] birdRnd;
+
+  lfsr_rng birdRng (
+      .clk     (clk),
+      .resetN  (resetN),
+      .step    (tickMove),
+      .seedLoad(birdSeedLoad),
+      .seed    ({birdSeed[7:0], birdSeed[15:8]} ^ 16'h5A5A),
+      .rnd     (birdRnd)
+  );
+
+  bird_trajectory birdTraj (
+      .clk      (clk),
+      .resetN   (resetN),
+      .tick     (tickMove),
+      .run      (birdRun),
+      .restart  (birdRestart),
+      .mode     (birdMode),
+      .rnd      (birdRnd),
+      .birdY    (birdY),
+      .birdVy   (birdVy),
+      .trajState(birdTrajState)
+  );
 
   int errors = 0;
 

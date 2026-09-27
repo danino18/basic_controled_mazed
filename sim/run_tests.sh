@@ -4,7 +4,7 @@
 # lpm_rom models find their .mif files at the same relative paths as Quartus.
 # Sources are passed as relative paths because the repository path has a space.
 #
-# Usage: sh sim/run_tests.sh [tb_name ...]          (default: every tb_*.sv except tb_render and tb_learn)
+# Usage: sh sim/run_tests.sh [tb_name ...]          (default: every tb_*.sv except tb_render)
 #        SIMDIR=build/sim2 sh sim/run_tests.sh ...   (a second run in parallel)
 #        sh sim/run_tests.sh tb_render +shots=2,40      (writes build/sim/frame_NNN.png)
 
@@ -25,7 +25,7 @@ cp -r "$ROOT/fpga/RTL/AUDIO" RTL/ 2>/dev/null   # melody_player_1's lpm_rom read
 # the wrapper of the precompiled keyboard block, and supplied files that have a
 # simulator-friendly copy in sim/models (see each file there).
 SOURCES=$(grep -E "^set_global_assignment -name (SYSTEMVERILOG|VERILOG)_FILE RTL/" "$ROOT/fpga/controlled_maze.qsf" \
-          | awk '{print $NF}' | grep -v "TOP/controlled_maze_top.sv" | grep -v "kbd_wrapper.v" \
+          | awk '{print $NF}' | grep -v "TOP/controlled_maze_top_struct.sv" | grep -v "kbd_wrapper.v" \
           | grep -v "KEYBOARDX/random.sv" | grep -v "AUDIO/melody_player_1.sv" \
           | sed "s|^|../../fpga/|")
 
@@ -41,7 +41,7 @@ for arg in "$@"; do
   esac
 done
 if [ -z "$TESTS" ]; then
-  TESTS=$(cd "$ROOT/sim" && ls tb_*.sv | sed 's/\.sv$//' | grep -v '^tb_render$' | grep -v '^tb_learn$')
+  TESTS=$(cd "$ROOT/sim" && ls tb_*.sv | sed 's/\.sv$//' | grep -v '^tb_render$')
 fi
 
 status=0
