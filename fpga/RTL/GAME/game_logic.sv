@@ -75,7 +75,7 @@ module game_logic
     // world/coral scroll speed (Numpad 4/6)
     output logic [2:0]                   speedLevel,
 
-    // raw one-clock events for sound_engine (in the top level): tied to the exact
+    // raw one-clock events for Sound_Block (in the top level): tied to the exact
     // same pulses that award the point and commit the round, so a sound
     // cannot fire without its matching game event, or vice versa
     output logic                         scoreEvent,

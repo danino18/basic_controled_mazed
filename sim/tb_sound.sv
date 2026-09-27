@@ -1,4 +1,4 @@
-// Checks sound_engine: exactly one sound per score/collision event, no
+// Checks sound_core (sound_arbiter + the supplied audio chain): exactly one sound per score/collision event, no
 // retriggering while a sound is already playing or while the game stays in
 // GAME_OVER, distinct score vs. failure tones, and SW0 mute. Runs the real
 // supplied audio chain (melody_player_1's simulation-timing copy in
@@ -22,7 +22,7 @@ module tb_sound;
   logic [15:0] audioSample;
   logic        playingScore, playingFail;
 
-  sound_engine dut (
+  sound_core dut (
       .clk(clk), .resetN(resetN), .scoreTrigger(scoreTrigger), .failTrigger(failTrigger),
       .mute(mute), .audioSample(audioSample), .playingScore(playingScore), .playingFail(playingFail));
 
@@ -72,12 +72,12 @@ module tb_sound;
   task automatic wait_silent(input int maxClocks);
     int n;
     n = 0;
-    while ((playingScore || playingFail || dut.pendingScore != 0 || dut.pendingFail) && n < maxClocks) begin
+    while ((playingScore || playingFail || dut.arbiter.pendingScore != 0 || dut.arbiter.pendingFail) && n < maxClocks) begin
       @(posedge clk);
       n++;
     end
-    if (playingScore || playingFail || dut.pendingScore != 0 || dut.pendingFail)
-      fail_msg("sound_engine never returned to silence (or never drained its queue)");
+    if (playingScore || playingFail || dut.arbiter.pendingScore != 0 || dut.arbiter.pendingFail)
+      fail_msg("sound_core never returned to silence (or never drained its queue)");
   endtask
 
   // Triggers one sound, waits for it to start and finish, and reports its
@@ -121,8 +121,8 @@ module tb_sound;
 
     // ---------------------------------------------------------------- must not continuously retrigger
     // A trigger held (or repeated) while GAME_OVER/HIT would stay busy is not
-    // itself sound_engine's job (game_fsm only pulses roundOver once per
-    // collision - see tb_game_fsm), but sound_engine must still not restart a
+    // itself sound_core's job (game_fsm only pulses roundOver once per
+    // collision - see tb_game_fsm), but sound_core must still not restart a
     // sound that is already playing just because playingFail stays high.
     pulse(failTrigger);
     wait_start(50);

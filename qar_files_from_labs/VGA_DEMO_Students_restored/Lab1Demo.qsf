@@ -39,7 +39,7 @@
 
 set_global_assignment -name FAMILY "Cyclone V"
 set_global_assignment -name DEVICE 5CSXFC6D6F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY TOP_VGA_DEMO
+set_global_assignment -name TOP_LEVEL_ENTITY audio_codec_controller
 set_global_assignment -name ORIGINAL_QUARTUS_VERSION 17.0.0
 set_global_assignment -name PROJECT_CREATION_TIME_DATE "15:51:54  JULY 08, 2018"
 set_global_assignment -name LAST_QUARTUS_VERSION "17.1.0 Lite Edition"
@@ -177,6 +177,46 @@ set_global_assignment -name MIN_CORE_JUNCTION_TEMP 0
 set_global_assignment -name MAX_CORE_JUNCTION_TEMP 85
 set_global_assignment -name POWER_PRESET_COOLING_SOLUTION "23 MM HEAT SINK WITH 200 LFPM AIRFLOW"
 set_global_assignment -name POWER_BOARD_THERMAL_MODEL "NONE (CONSERVATIVE)"
+set_global_assignment -name QXP_FILE audio_codec_controller.QXP
+set_global_assignment -name BDF_FILE RTL/AUDIO/AUDIO.bdf
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/ToneDecoder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/SinTable.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/prescaler.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/Mili_sec_counter.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/melody_player_1.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/JukeBox1.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/addr_counter.sv
+set_global_assignment -name QXP_FILE KBDINTF.qxp
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/game_controller.sv
+set_global_assignment -name BDF_FILE RTL/VGA/Smiley_Block_T.bdf
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/smileyBitMap.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/square_object.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/back_ground_draw.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/square_Hart_object.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/HartsMatrixBitMap.sv
+set_global_assignment -name BDF_FILE RTL/VGA/HART_DISPLAY.bdf
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/smiley_move.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/objects_mux.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/VGA_Controller.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/NumbersBitMap.sv
+set_global_assignment -name TCL_SCRIPT_FILE constraints/pin.tcl
+set_global_assignment -name BDF_FILE RTL/KEYBOARDX/TOP_KBD.bdf
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/keyPad_decoder.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/simple_up_counter.sv
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/random.sv
+set_global_assignment -name CDF_FILE output_files/Chain1.cdf
+set_global_assignment -name SDC_FILE DE10_Standard_Audio.sdc
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/Seg7/SEG7.SV
+set_global_assignment -name QIP_FILE CLK_31P5.qip
+set_global_assignment -name SIP_FILE CLK_31P5.sip
+set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/MyConstant.sv
+set_global_assignment -name CDF_FILE output_files/Chain2.cdf
+set_global_assignment -name BDF_FILE ALL_HEXSS.bdf
+set_global_assignment -name BDF_FILE RTL/VGA/TOP_VGA_DEMO.bdf
+set_global_assignment -name BDF_FILE ../../fpga/RTL/TOP/TOP_VGA_DEMO.bdf
+set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
+set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
+set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDOUT[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDOUT[5]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to AUDOUT[6]
@@ -275,44 +315,4 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to altera_reserved_tck
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to altera_reserved_tdi
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to altera_reserved_tdo
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to altera_reserved_tms
-set_global_assignment -name PARTITION_NETLIST_TYPE SOURCE -section_id Top
-set_global_assignment -name PARTITION_FITTER_PRESERVATION_LEVEL PLACEMENT_AND_ROUTING -section_id Top
-set_global_assignment -name PARTITION_COLOR 16764057 -section_id Top
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name QXP_FILE audio_codec_controller.QXP
-set_global_assignment -name BDF_FILE RTL/AUDIO/AUDIO.bdf
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/ToneDecoder.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/SinTable.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/prescaler.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/Mili_sec_counter.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/melody_player_1.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/JukeBox1.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/AUDIO/addr_counter.sv
-set_global_assignment -name QXP_FILE KBDINTF.qxp
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/game_controller.sv
-set_global_assignment -name BDF_FILE RTL/VGA/Smiley_Block_T.bdf
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/smileyBitMap.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/square_object.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/back_ground_draw.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/square_Hart_object.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/HartsMatrixBitMap.sv
-set_global_assignment -name BDF_FILE RTL/VGA/HART_DISPLAY.bdf
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/smiley_move.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/objects_mux.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/VGA_Controller.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/NumbersBitMap.sv
-set_global_assignment -name TCL_SCRIPT_FILE constraints/pin.tcl
-set_global_assignment -name BDF_FILE RTL/KEYBOARDX/TOP_KBD.bdf
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/keyPad_decoder.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/simple_up_counter.sv
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/KEYBOARDX/random.sv
-set_global_assignment -name CDF_FILE output_files/Chain1.cdf
-set_global_assignment -name SDC_FILE DE10_Standard_Audio.sdc
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/Seg7/SEG7.SV
-set_global_assignment -name QIP_FILE CLK_31P5.qip
-set_global_assignment -name SIP_FILE CLK_31P5.sip
-set_global_assignment -name SYSTEMVERILOG_FILE RTL/VGA/MyConstant.sv
-set_global_assignment -name CDF_FILE output_files/Chain2.cdf
-set_global_assignment -name BDF_FILE ALL_HEXSS.bdf
-set_global_assignment -name BDF_FILE RTL/VGA/TOP_VGA_DEMO.bdf
-set_global_assignment -name BDF_FILE ../../fpga/RTL/TOP/TOP_VGA_DEMO.bdf

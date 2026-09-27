@@ -12,12 +12,11 @@ functions, and any output files from any of the foregoing
 associated documentation or information are expressly subject 
 to the terms and conditions of the Intel Program License 
 Subscription Agreement, the Intel Quartus Prime License Agreement,
-the Intel MegaCore Function License Agreement, or other 
-applicable license agreement, including, without limitation, 
-that your use is for the sole purpose of programming logic 
-devices manufactured by Intel and sold by Intel or its 
-authorized distributors.  Please refer to the applicable 
-agreement for further details.
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details.
 */
 //#pragma file_not_in_maxplusii_format
 (header "graphic" (version "1.4"))
@@ -89,7 +88,7 @@ agreement for further details.
 	(input)
 	(rect -144 480 24 496)
 	(text "INPUT" (rect 125 0 153 10)(font "Arial" (font_size 6)))
-	(text "keyPad[3..0]" (rect 5 0 65 17)(font "Intel Clear" ))
+	(text "keyPad[3..0]" (rect 5 0 66 17)(font "Intel Clear" ))
 	(pt 168 8)
 	(drawing
 		(line (pt 84 12)(pt 109 12))
@@ -103,7 +102,7 @@ agreement for further details.
 )
 (pin
 	(input)
-	(rect 1376 704 1544 720)
+	(rect 1344 704 1512 720)
 	(text "INPUT" (rect 125 0 153 10)(font "Arial" (font_size 6)))
 	(text "AUDIN[1..2]" (rect 5 0 67 12)(font "Arial" ))
 	(pt 168 8)
@@ -417,35 +416,35 @@ agreement for further details.
 		(pt 256 32)
 		(output)
 		(text "AUD_DACDAT" (rect 0 0 74 12)(font "Arial" ))
-		(text "AUD_DACDAT" (rect 173 27 235 39)(font "Arial" ))
+		(text "AUD_DACDAT" (rect 173 27 247 39)(font "Arial" ))
 		(line (pt 256 32)(pt 240 32))
 	)
 	(port
 		(pt 256 48)
 		(output)
 		(text "AUD_XCK" (rect 0 0 50 12)(font "Arial" ))
-		(text "AUD_XCK" (rect 193 43 235 55)(font "Arial" ))
+		(text "AUD_XCK" (rect 193 43 243 55)(font "Arial" ))
 		(line (pt 256 48)(pt 240 48))
 	)
 	(port
 		(pt 256 64)
 		(output)
 		(text "AUD_I2C_SCLK" (rect 0 0 81 12)(font "Arial" ))
-		(text "AUD_I2C_SCLK" (rect 167 59 235 71)(font "Arial" ))
+		(text "AUD_I2C_SCLK" (rect 167 59 248 71)(font "Arial" ))
 		(line (pt 256 64)(pt 240 64))
 	)
 	(port
 		(pt 256 96)
 		(output)
 		(text "adcdata_left[15..0]" (rect 0 0 93 12)(font "Arial" ))
-		(text "adcdata_left[15..0]" (rect 157 91 235 103)(font "Arial" ))
+		(text "adcdata_left[15..0]" (rect 157 91 250 103)(font "Arial" ))
 		(line (pt 256 96)(pt 240 96)(line_width 3))
 	)
 	(port
 		(pt 256 112)
 		(output)
 		(text "adcdata_right[15..0]" (rect 0 0 97 12)(font "Arial" ))
-		(text "adcdata_right[15..0]" (rect 153 107 235 119)(font "Arial" ))
+		(text "adcdata_right[15..0]" (rect 153 107 250 119)(font "Arial" ))
 		(line (pt 256 112)(pt 240 112)(line_width 3))
 	)
 	(port
@@ -655,12 +654,6 @@ agreement for further details.
 	(pt 2064 128)
 )
 (connector
-	(text "AUDIN[1..2]" (rect 1554 696 1608 713)(font "Intel Clear" ))
-	(pt 1544 712)
-	(pt 1776 712)
-	(bus)
-)
-(connector
 	(text "AUDIN[2]" (rect 1626 160 1669 177)(font "Intel Clear" ))
 	(pt 1760 176)
 	(pt 1616 176)
@@ -680,6 +673,12 @@ agreement for further details.
 	(text "sinVal[15..0]" (rect 1654 192 1713 209)(font "Intel Clear" ))
 	(pt 1600 208)
 	(pt 1760 208)
+	(bus)
+)
+(connector
+	(text "AUDIN[1..2]" (rect 1522 696 1576 713)(font "Intel Clear" ))
+	(pt 1512 712)
+	(pt 1744 712)
 	(bus)
 )
 (text "// (c) Technion IIT, Department of Electrical Engineering 2021            \n// Written By Alex Grinshpun & David Bar-On  June 2018 \r            //Updated by Eyal Lev January 2021\n" (rect 352 -8 958 49)(font "Intel Clear" (font_size 8)))

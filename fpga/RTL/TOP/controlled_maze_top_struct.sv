@@ -324,32 +324,20 @@ module controlled_maze_top_struct
   );
 
   // ---------------------------------------------------------------- sound
-  logic [15:0] audioSample;
-
-  sound_engine sound (
+  Sound_Block sound (
       .clk         (clk),
       .resetN      (resetN),
       .scoreTrigger(scoreEvent),
       .failTrigger (failEvent),
       .mute        (SW0),
-      .audioSample (audioSample),
+      .AUD_ADCLRCK (AUD_ADCLRCK),
+      .AUD_BCLK    (AUD_BCLK),
+      .AUD_DACDAT  (AUD_DACDAT),
+      .AUD_XCK     (AUD_XCK),
+      .AUD_I2C_SCLK(AUD_I2C_SCLK),
+      .AUD_I2C_SDAT(AUD_I2C_SDAT),
       .playingScore(),
       .playingFail ()
-  );
-
-  audio_codec_controller codec (
-      .CLOCK31_5    (clk),
-      .resetN       (resetN),
-      .AUD_ADCLRCK  (AUD_ADCLRCK),
-      .AUD_BCLK     (AUD_BCLK),
-      .dacdata_left (audioSample),
-      .dacdata_right(audioSample),
-      .AUD_DACDAT   (AUD_DACDAT),
-      .AUD_XCK      (AUD_XCK),
-      .AUD_I2C_SCLK (AUD_I2C_SCLK),
-      .adcdata_left (),
-      .adcdata_right(),
-      .AUD_I2C_SDAT (AUD_I2C_SDAT)
   );
 
   // LEDR[9]=blink, [8:7]=columns, [6:5]=difficulty, [4:2]=screen, [1]=resetN, [0]=PLL locked.

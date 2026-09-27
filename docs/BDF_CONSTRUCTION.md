@@ -24,7 +24,7 @@ the module's port list and writes a `.bsf` next to it — do this once per
 module listed under "Blocks to insert" in each section below. It is safe to
 re-run any time the module's ports change; Quartus regenerates the symbol.
 
-Four blocks already have empty starting `.bdf` stubs, ready to open in the
+Six blocks already have empty starting `.bdf` stubs, ready to open in the
 Block Editor (**File → Open**, then start placing symbols with **Edit →
 Insert Symbol**, or drag from the Project Navigator):
 
@@ -32,6 +32,8 @@ Insert Symbol**, or drag from the Project Navigator):
 - `fpga/RTL/DRAW/Bird_Block.bdf`
 - `fpga/RTL/DRAW/Coral_Block.bdf`
 - `fpga/RTL/KEYBOARDX/KBD_Block.bdf`
+- `fpga/RTL/GAME/Sound_Block.bdf`
+- `fpga/RTL/DRAW/hex_display_top.bdf`
 
 ## Conventions used throughout
 
@@ -90,9 +92,8 @@ Corresponds to `RTL/VGA/TOP_VGA_DEMO.bdf`. Reference source:
 | `ui_panels` | `RTL/DRAW/ui_panels.sv` | |
 | `objects_mux` | `RTL/DRAW/objects_mux.sv` | **the course's `objects_mux`, visible at top level** |
 | `leading_zero_blank` ×2 | `RTL/COMMON/leading_zero_blank.sv` | param `DIGITS=3`; one for `score`, one for `best` |
-| `hex_display_top` | `RTL/DRAW/hex_display_top.sv` | matches course `ALL_HEXSS` |
-| `sound_engine` | `RTL/GAME/sound_engine.sv` | matches course `AUDIO`, at this hierarchy level |
-| `audio_codec_controller` | `audio_codec_controller.QXP` | supplied IP, already has a `.bsf` |
+| `hex_display_top` | `RTL/DRAW/hex_display_top.bdf` (its own BDF — §6) | matches course `ALL_HEXSS` |
+| `Sound_Block` | `RTL/GAME/Sound_Block.bdf` (its own BDF — §5) | matches course `AUDIO`; owns `audio_codec_controller` internally, see §5 |
 | Two OR2 gate primitives | Quartus primitive `OR2` | for `entropyPulse` (4-way OR, chain 3× OR2) — see below |
 | Two comparator/AND primitives, or one small SV leaf | for `inMenu`/`crashed`/`flash`/`coralShown` | see "small derived signals" below |
 
@@ -133,7 +134,7 @@ birdRestart,birdMode[1:0],birdSeedLoad,birdSeed[15:0]` (→ `Bird_Block`),
 (internal to game_logic's own FSM only — no outside consumer), `hitColumn
 [2:0]` (unused outside), `score[2:0][3:0],best[2:0][3:0],newBest` (→
 `text_draw`, `leading_zero_blank` ×2), `speedLevel[2:0]` (→ `speed_readout`),
-`scoreEvent,failEvent` (→ `sound_engine`).
+`scoreEvent,failEvent` (→ `Sound_Block`).
 
 **Small derived signals** (pure combinational, no memory — buildable from
 Quartus primitive gates, exactly like the course's own `NOT` gate in
@@ -180,13 +181,14 @@ bestDigits=best,newBest,blink` in; `drawingRequest → textDR`, `RGBout → text
 `hex_display_top`: `digits = {best[2:0][3:0], score[2:0][3:0]}` (18 bits,
 `best` in the high half), `digitOn = {highOn, lowOn}` (6 bits) → `HEX0..HEX5`.
 
-**Sound:** `sound_engine.scoreTrigger=scoreEvent, failTrigger=failEvent,
-mute=SW0` in; `audioSample[15:0] → ` both `audio_codec_controller.dacdata_left`
-and `.dacdata_right` (mono, same sample on both channels — matches the
-supplied board wiring convention).
-`audio_codec_controller`: `CLOCK31_5=clk, resetN=resetN, AUD_ADCLRCK,
-AUD_BCLK` in (top pins) → `AUD_DACDAT, AUD_XCK, AUD_I2C_SCLK` out (top pins),
-`AUD_I2C_SDAT` bidir (top pin); `adcdata_left/right` left unconnected.
+**Sound:** `Sound_Block.scoreTrigger=scoreEvent, failTrigger=failEvent,
+mute=SW0` in (from `game_logic`/`SW0`); `AUD_ADCLRCK, AUD_BCLK` in (top pins)
+→ `AUD_DACDAT, AUD_XCK, AUD_I2C_SCLK` out (top pins), `AUD_I2C_SDAT` bidir
+(top pin) — straight pass-through to the top-level codec pins, since
+`audio_codec_controller` now lives *inside* `Sound_Block` (see §5), matching
+where the course's own `AUDIO.bdf` places it. `Sound_Block` has no other
+outputs used at this level (`playingScore`/`playingFail` are debug-only and
+may be left unconnected).
 
 **LEDR:** `LEDR[9]=blink, LEDR[8:7]=columnCount, LEDR[6:5]=difficulty,
 LEDR[4:2]=screen, LEDR[1]=resetN, LEDR[0]=pllLocked` — a straight bit
@@ -213,8 +215,7 @@ controlled_maze_top
 ├── text_draw, speed_readout, ui_panels ◄── pixelX/Y, game state ──> *DR, *RGB
 ├── objects_mux ◄── all *DR/*RGB pairs + waterRGB ──> screenRGB (feeds VGA_Controller)
 ├── leading_zero_blank ×2, hex_display_top ◄── score, best ──> HEX0..HEX5
-├── sound_engine ◄── scoreEvent, failEvent ──> audioSample
-├── audio_codec_controller ◄── audioSample, AUD_* pins ──> AUD_* pins
+├── Sound_Block ◄── scoreEvent, failEvent, AUD_ADCLRCK, AUD_BCLK ──> AUD_DACDAT, AUD_XCK, AUD_I2C_SCLK, AUD_I2C_SDAT
 └── LEDR assembly (bit concatenation)
 ```
 
@@ -386,22 +387,168 @@ KBD_Block
 
 ---
 
-## 5. Switching the active build from the structural top to the BDF
+## 5. `Sound_Block.bdf` — the audio subsystem
 
-1. Build all four BDFs as described above (`.bsf` symbols first, then wire
+Corresponds to `RTL/AUDIO/AUDIO.bdf`. Reference source:
+`fpga/RTL/GAME/Sound_Block.sv`. Just like the course's `AUDIO.bdf`, this block
+owns `audio_codec_controller` itself — the codec pins (`AUD_*`) terminate
+here, not at the top level — and places it flat, directly alongside the
+melody chain (`melody_player_1 → ToneDecoder → prescaler → addr_counter →
+sintable`), exactly as the course wires it, unmodified. The one piece with no
+course equivalent is `sound_arbiter`, since the course's `AUDIO` block never
+had game events to arbitrate between.
+
+**A separate file, `sound_core.sv`, is *not* placed in this BDF at all.** It
+duplicates this same wiring minus `audio_codec_controller`, purely as a
+simulation seam: the codec has no ModelSim-Intel-ASE model, so anything that
+contains it can't be instantiated by a testbench. Every testbench
+(`sim/tb_sound.sv`, and `game_core_sim` in `sim/tb_render.sv`) instantiates
+`sound_core` directly instead of `Sound_Block` — the two are two independent,
+parallel implementations of the same idea (one real, one sim-only), the same
+way `game_core_sim` itself is a parallel, simulatable stand-in for
+`controlled_maze_top_struct`. Nothing keeps them in sync automatically; if you
+change the chain's wiring here, mirror the change in `sound_core.sv` too.
+
+### Block ports
+
+| Port | Dir | Width | Notes |
+|---|---|---|---|
+| `clk`, `resetN` | in | 1 | |
+| `scoreTrigger` | in | 1 | one-clock pulse, = `scoreEvent` |
+| `failTrigger` | in | 1 | one-clock pulse, = `failEvent` |
+| `mute` | in | 1 | = `SW0`, gates only the final sample |
+| `AUD_ADCLRCK`, `AUD_BCLK` | in | 1 each | codec is I2S clock master (top pins) |
+| `AUD_DACDAT`, `AUD_XCK`, `AUD_I2C_SCLK` | out | 1 each | top pins |
+| `AUD_I2C_SDAT` | inout | 1 | top pin |
+| `playingScore` | out | 1 | debug/test only |
+| `playingFail` | out | 1 | debug/test only |
+
+### Blocks to insert
+
+| Symbol | Module | Notes |
+|---|---|---|
+| `sound_arbiter` | `RTL/GAME/sound_arbiter.sv` | the one piece with no course equivalent — arbitrates score vs. fail |
+| `melody_player_1` | `RTL/AUDIO/melody_player_1.sv` | reused from the course, unmodified |
+| `ToneDecoder` | `RTL/AUDIO/ToneDecoder.sv` | reused, unmodified |
+| `prescaler` | `RTL/AUDIO/prescaler.sv` | reused, unmodified |
+| `addr_counter` | `RTL/AUDIO/addr_counter.sv` | reused, unmodified; param `COUNT_SIZE=8` |
+| `sintable` | `RTL/AUDIO/SinTable.sv` | reused, unmodified; param `COUNT_SIZE=8` |
+| `audio_codec_controller` | `audio_codec_controller.QXP` | supplied IP — reused exactly as the course wires it |
+
+### Connections
+
+`sound_arbiter`: `clk,resetN,scoreTrigger,failTrigger` in (straight from
+`Sound_Block`'s own ports), `melodyEnded` in (fed back from `melody_player_1`,
+below); outputs `startMelody`, `melodySelect[3:0]` → `melody_player_1`, and
+`playingScore`/`playingFail` straight out to `Sound_Block`'s own ports.
+
+`melody_player_1`: `resetN, CLOCK_31p5=clk, startMelody, melodySelect` in
+(from `sound_arbiter`); outputs `tone[3:0], octave[2:0]` → `ToneDecoder`,
+`EnableSoundOut` → `addr_counter.en1`, `melodyEnded` → back to
+`sound_arbiter.melodyEnded` (feedback).
+
+`ToneDecoder`: `tone, octave` in → `preScaleValue[11:0]` → `prescaler`.
+
+`prescaler`: `clk, resetN, preScaleValue` in → `slowEnPulse` → `addr_counter.en`
+(`slowEnPulse_d` unconnected).
+
+`addr_counter` (param `COUNT_SIZE=8`): `clk, resetN, en=slowEnPulse,
+en1=EnableSoundOut` in → `addr[7:0]` → `sintable.ADDR`.
+
+`sintable` (param `COUNT_SIZE=8`): `clk, resetN, ADDR` in, `volume` tied to
+`1'b1` (full scale — muting happens once, below, at the output) → `Q[15:0]`.
+
+**Muted sample (no gate symbol needed — just a bus tap into the codec):**
+`audioSample = mute ? 0 : sintable.Q` — build this as a 2-to-1 mux (or a
+tied-zero AND gate) feeding directly into `audio_codec_controller`'s two
+`dacdata_*` inputs below; there is no separate `Sound_Block` output pin for it.
+
+`audio_codec_controller`: `CLOCK31_5=clk, resetN=resetN, AUD_ADCLRCK,
+AUD_BCLK` in (top pins); `dacdata_left=audioSample, dacdata_right=audioSample`
+in (mono — same sample on both channels) → `AUD_DACDAT, AUD_XCK,
+AUD_I2C_SCLK` out (top pins), `AUD_I2C_SDAT` bidir (top pin);
+`adcdata_left/right` left unconnected (no recording, playback only).
+
+### ASCII diagram
+
+```
+Sound_Block
+├── sound_arbiter <- scoreTrigger, failTrigger, melodyEnded --> startMelody, melodySelect, playingScore, playingFail
+├── melody_player_1 <- startMelody, melodySelect --> tone, octave, EnableSoundOut, melodyEnded (feedback to sound_arbiter)
+├── ToneDecoder <- tone, octave --> preScaleValue
+├── prescaler <- preScaleValue --> slowEnPulse
+├── addr_counter <- slowEnPulse(en), EnableSoundOut(en1) --> addr
+├── sintable <- addr, volume=1 --> Q
+└── audio_codec_controller <- audioSample(=mute?0:Q, x2), AUD_ADCLRCK, AUD_BCLK --> AUD_DACDAT, AUD_XCK, AUD_I2C_SCLK, AUD_I2C_SDAT
+```
+
+---
+
+## 6. `hex_display_top.bdf` — the seven-segment displays
+
+Corresponds to `ALL_HEXSS.bdf`. Reference source:
+`fpga/RTL/DRAW/hex_display_top.sv`. This is the simplest of the six blocks:
+six identical, independent instances of the supplied `SEG7` decoder, one per
+physical display, with no logic of its own. Unlike `Bird_Block`/`Coral_Block`/
+`KBD_Block`/`Sound_Block`, it has no game-specific state to arbitrate or
+combine — it is included as its own BDF purely for one-to-one visual parity
+with the course's own `ALL_HEXSS.bdf`, which wires the exact same six `SEG7`
+instances the same way.
+
+### Block ports
+
+| Port | Dir | Width | Notes |
+|---|---|---|---|
+| `clk`, `resetN` | in | 1 | |
+| `digits` | in | [5:0][3:0] | one BCD digit per display; `digits[0]` → `HEX0` |
+| `digitOn` | in | [5:0] | `0` blanks that display (leading-zero blanking) |
+| `HEX0`..`HEX5` | out | [6:0] each | |
+
+### Blocks to insert
+
+| Symbol | Module | Notes | Count |
+|---|---|---|---|
+| `SEG7` | `RTL/Seg7/SEG7.SV` | reused from the course, unmodified | ×6 |
+
+### Connections
+
+Six independent, identical instances — no wiring between them. For `i` in
+`0..5`: `SEG7.clk=clk, resetN=resetN, iDIG=digits[i], darkN=digitOn[i]` in →
+`oSEG → HEX{i}` (the block's own output pin), straight through, no logic.
+
+### ASCII diagram
+
+```
+hex_display_top
+├── SEG7 (inst 0) <- digits[0], digitOn[0] --> HEX0
+├── SEG7 (inst 1) <- digits[1], digitOn[1] --> HEX1
+├── SEG7 (inst 2) <- digits[2], digitOn[2] --> HEX2
+├── SEG7 (inst 3) <- digits[3], digitOn[3] --> HEX3
+├── SEG7 (inst 4) <- digits[4], digitOn[4] --> HEX4
+└── SEG7 (inst 5) <- digits[5], digitOn[5] --> HEX5
+```
+
+---
+
+## 7. Switching the active build from the structural top to the BDF
+
+1. Build all six BDFs as described above (`.bsf` symbols first, then wire
    each BDF, innermost first: `Bird_Block.bdf`, `Coral_Block.bdf`,
-   `KBD_Block.bdf`, then `controlled_maze_top.bdf` which uses the other
-   three's own symbols).
-2. In `fpga/controlled_maze.qsf`, add BDF file assignments for the four files
+   `KBD_Block.bdf`, `Sound_Block.bdf`, `hex_display_top.bdf`, then
+   `controlled_maze_top.bdf` which uses the other five's own symbols).
+2. In `fpga/controlled_maze.qsf`, add BDF file assignments for the six files
    (Quartus does this automatically when you save a BDF inside the open
    project — check **Assignments → Settings → Files** afterward to confirm
-   all four are listed).
+   all six are listed).
 3. Change `set_global_assignment -name TOP_LEVEL_ENTITY controlled_maze_top_struct`
    to `... controlled_maze_top` in the `.qsf`.
 4. Recompile (`Start Compilation`). `controlled_maze_top_struct.sv`,
-   `Bird_Block.sv`, `Coral_Block.sv`, and `KBD_Block.sv` can stay in the
-   project file list (unreferenced files with no path from the new
-   `TOP_LEVEL_ENTITY` are simply not elaborated) — keeping them costs
-   nothing and preserves the ModelSim regression exactly as-is, since every
-   testbench still targets `game_logic`/`Bird_Block`/`Coral_Block`/
-   `game_core_sim` (in `sim/tb_render.sv`) directly, never the top-level BDF.
+   `Bird_Block.sv`, `Coral_Block.sv`, `KBD_Block.sv`, `Sound_Block.sv`, and
+   `hex_display_top.sv` can stay in the project file list (unreferenced files
+   with no path from the new `TOP_LEVEL_ENTITY` are simply not elaborated) —
+   keeping them costs nothing and preserves the ModelSim regression exactly
+   as-is, since every testbench still targets `game_logic`/`Bird_Block`/
+   `Coral_Block`/`sound_core`/`hex_display_top`/`game_core_sim` (in
+   `sim/tb_render.sv`) directly, never the top-level BDF. `sound_arbiter.sv`
+   and `sound_core.sv` are genuine leaves either way and stay referenced
+   regardless of which top is active.

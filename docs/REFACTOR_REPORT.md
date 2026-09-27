@@ -24,7 +24,7 @@ controlled_maze_top(_struct)
 ├── text_draw, speed_readout, ui_panels
 ├── objects_mux                               [visible at top level]
 ├── leading_zero_blank ×2, hex_display_top     (→ ALL_HEXSS)
-├── sound_engine  (→ AUDIO)
+├── Sound_Block  (→ AUDIO)                    [own composite]
 └── audio_codec_controller                    [board glue, unchanged]
 ```
 
@@ -40,7 +40,7 @@ controlled_maze_top(_struct)
 | `back_ground_draw` | `water_background` | reused, direct leaf |
 | `objects_mux` | `objects_mux` (renamed from `objects_mux_top`) | modified: dropped the `char`/`train` layers |
 | `game_controller` (AND drawing requests → collision) | `game_logic` | kept the existing geometric `collision_detect` (a deliberate upgrade over the course demo's pixel-AND collision, per rule 8) — positioned as the top-level "game controller" peer block |
-| `AUDIO` | `sound_engine` + existing AUDIO chain | reused, direct leaf |
+| `AUDIO` | `Sound_Block` (own BDF composite: `sound_core` [=`sound_arbiter` + existing AUDIO chain] + `audio_codec_controller`) | **new composite**, course pattern |
 | `ALL_HEXSS` | `hex_display_top` | reused, direct leaf |
 | `NumbersBitMap` (unwired stub) | `text_draw`, `ui_panels`, `speed_readout` | kept — legitimate non-ML game UI |
 | — | `frame_blink` | **new leaf**, split out of former inline top-level state so the top stays pure wiring |
@@ -114,7 +114,7 @@ All of `RTL/AUDIO/`, `RTL/COMMON/` (except the new `frame_blink.sv`),
 `RTL/Seg7/`, `RTL/KEYBOARDX/` (except the new `KBD_Block.sv`); `RTL/GAME/`:
 `bird_trajectory.sv`, `collision_detect.sv`, `column_track.sv`,
 `frame_sequencer.sv`, `gap_place.sv`, `key_input.sv`, `maze_control.sv`,
-`score_bcd.sv`, `sound_engine.sv`, `lane_engine.sv`, `world_speed_control.sv`;
+`score_bcd.sv`, `sound_arbiter.sv`, `sound_core.sv`, `Sound_Block.sv`, `lane_engine.sv`, `world_speed_control.sv`;
 all of `RTL/DRAW/` except the two removed and two new files;
 `RTL/PKG/game_params_pkg.sv`, `game_state_pkg.sv`, `palette_pkg.sv`,
 `text_pkg.sv`; `RTL/MIF/bird.mif`, `coral.mif`, `font.mif`, `songs.mif`.

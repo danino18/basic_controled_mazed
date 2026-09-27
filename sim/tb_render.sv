@@ -166,7 +166,7 @@ module game_core_sim (
       .clk(clk), .resetN(resetN), .digits({best, score}), .digitOn({highOn, lowOn}),
       .HEX0(HEX0), .HEX1(HEX1), .HEX2(HEX2), .HEX3(HEX3), .HEX4(HEX4), .HEX5(HEX5));
 
-  sound_engine sound (
+  sound_core sound (
       .clk(clk), .resetN(resetN), .scoreTrigger(scoreEvent), .failTrigger(failEvent),
       .mute(muteSw), .audioSample(audioSample), .playingScore(), .playingFail());
 

@@ -12,12 +12,11 @@ functions, and any output files from any of the foregoing
 associated documentation or information are expressly subject 
 to the terms and conditions of the Intel Program License 
 Subscription Agreement, the Intel Quartus Prime License Agreement,
-the Intel MegaCore Function License Agreement, or other 
-applicable license agreement, including, without limitation, 
-that your use is for the sole purpose of programming logic 
-devices manufactured by Intel and sold by Intel or its 
-authorized distributors.  Please refer to the applicable 
-agreement for further details.
+the Intel FPGA IP License Agreement, or other applicable license
+agreement, including, without limitation, that your use is for
+the sole purpose of programming logic devices manufactured by
+Intel and sold by Intel or its authorized distributors.  Please
+refer to the applicable agreement for further details.
 */
 //#pragma file_not_in_maxplusii_format
 (header "graphic" (version "1.4"))
@@ -563,7 +562,7 @@ agreement for further details.
 	)
 )
 (symbol
-	(rect -248 688 56 880)
+	(rect -248 672 56 864)
 	(text "HART_DISPLAY" (rect 5 0 99 19)(font "Intel Clear" (font_size 8)))
 	(text "inst12" (rect 8 171 36 188)(font "Intel Clear" ))
 	(port
@@ -910,7 +909,7 @@ agreement for further details.
 	(annotation_block (parameter)(rect -352 440 -109 497))
 )
 (symbol
-	(rect 512 344 760 552)
+	(rect 504 344 752 552)
 	(text "objects_mux" (rect 5 0 67 12)(font "Arial" ))
 	(text "inst9" (rect 8 192 31 204)(font "Arial" ))
 	(port
@@ -1096,7 +1095,7 @@ agreement for further details.
 	)
 )
 (symbol
-	(rect 832 784 1048 944)
+	(rect 824 784 1040 944)
 	(text "AUDIO" (rect 5 0 45 19)(font "Intel Clear" (font_size 8)))
 	(text "inst18" (rect 8 139 36 156)(font "Intel Clear" ))
 	(port
@@ -1448,55 +1447,6 @@ agreement for further details.
 	(pt 56 56)
 )
 (connector
-	(text "clk" (rect 440 360 454 377)(font "Intel Clear" ))
-	(pt 392 376)
-	(pt 512 376)
-)
-(connector
-	(text "resetN" (rect 432 376 465 388)(font "Arial" ))
-	(pt 392 392)
-	(pt 512 392)
-)
-(connector
-	(text "smileyDR" (rect 402 392 448 409)(font "Intel Clear" ))
-	(pt 392 408)
-	(pt 512 408)
-)
-(connector
-	(text "smileyRGB[7..0]" (rect 404 408 480 425)(font "Intel Clear" ))
-	(pt 392 424)
-	(pt 512 424)
-	(bus)
-)
-(connector
-	(text "HartDrawingRequest" (rect 410 424 507 441)(font "Intel Clear" ))
-	(pt 392 440)
-	(pt 512 440)
-)
-(connector
-	(text "hartRGB[7..0]" (rect 410 440 473 457)(font "Intel Clear" ))
-	(pt 392 456)
-	(pt 512 456)
-	(bus)
-)
-(connector
-	(text "BG_RGB[7..0]" (rect 410 456 474 473)(font "Intel Clear" ))
-	(pt 392 472)
-	(pt 512 472)
-	(bus)
-)
-(connector
-	(text "boardersDrawReq" (rect 410 472 494 489)(font "Intel Clear" ))
-	(pt 392 488)
-	(pt 512 488)
-)
-(connector
-	(text "MIF_VGA[7..0]" (rect 410 488 478 505)(font "Intel Clear" ))
-	(pt 392 504)
-	(pt 512 504)
-	(bus)
-)
-(connector
 	(text "boardersDrawReq" (rect 424 672 508 689)(font "Intel Clear" ))
 	(pt 408 688)
 	(pt 528 688)
@@ -1579,12 +1529,6 @@ agreement for further details.
 	(bus)
 )
 (connector
-	(text "RGB[7..0]" (rect 772 360 816 377)(font "Intel Clear" ))
-	(pt 760 376)
-	(pt 880 376)
-	(bus)
-)
-(connector
 	(text "OVGA[28..0]" (rect 1098 408 1157 425)(font "Intel Clear" ))
 	(pt 1088 424)
 	(pt 1192 424)
@@ -1595,21 +1539,6 @@ agreement for further details.
 	(pt -432 1112)
 	(pt -312 1112)
 	(bus)
-)
-(connector
-	(text "clk" (rect 792 816 806 833)(font "Intel Clear" ))
-	(pt 784 832)
-	(pt 832 832)
-)
-(connector
-	(text "resetN" (rect 792 832 822 849)(font "Intel Clear" ))
-	(pt 784 848)
-	(pt 832 848)
-)
-(connector
-	(text "keypadValid" (rect 688 848 748 865)(font "Intel Clear" ))
-	(pt 832 864)
-	(pt 680 864)
 )
 (connector
 	(pt 1112 904)
@@ -1627,23 +1556,8 @@ agreement for further details.
 	(pt 1128 888)
 )
 (connector
-	(pt 552 968)
-	(pt 552 880)
-	(bus)
-)
-(connector
-	(pt 832 880)
-	(pt 552 880)
-	(bus)
-)
-(connector
 	(pt 1112 904)
 	(pt 1112 968)
-	(bus)
-)
-(connector
-	(pt 1048 816)
-	(pt 1208 816)
 	(bus)
 )
 (connector
@@ -1674,74 +1588,6 @@ agreement for further details.
 (connector
 	(pt 1416 952)
 	(pt 1496 952)
-	(bus)
-)
-(connector
-	(pt 736 816)
-	(pt 832 816)
-)
-(connector
-	(pt 744 896)
-	(pt 832 896)
-	(bus)
-)
-(connector
-	(text "keyPad[3..0]" (rect 464 952 524 969)(font "Intel Clear" ))
-	(pt 456 968)
-	(pt 552 968)
-	(bus)
-)
-(connector
-	(pt 552 968)
-	(pt 1112 968)
-	(bus)
-)
-(connector
-	(text "HartDrawingRequest" (rect 66 704 163 721)(font "Intel Clear" ))
-	(pt 56 720)
-	(pt 160 720)
-)
-(connector
-	(text "hartRGB[7..0]" (rect 66 720 129 737)(font "Intel Clear" ))
-	(pt 56 736)
-	(pt 160 736)
-	(bus)
-)
-(connector
-	(text "clk" (rect -336 704 -322 721)(font "Intel Clear" ))
-	(pt -248 720)
-	(pt -440 720)
-)
-(connector
-	(text "resetN" (rect -334 720 -304 737)(font "Intel Clear" ))
-	(pt -248 736)
-	(pt -440 736)
-)
-(connector
-	(text "pixelX[10..0]" (rect -334 736 -275 753)(font "Intel Clear" ))
-	(pt -248 752)
-	(pt -440 752)
-	(bus)
-)
-(connector
-	(text "pixelY[10..0]" (rect -334 752 -275 769)(font "Intel Clear" ))
-	(pt -248 768)
-	(pt -440 768)
-	(bus)
-)
-(connector
-	(pt -464 784)
-	(pt -248 784)
-	(bus)
-)
-(connector
-	(pt -464 688)
-	(pt -464 784)
-	(bus)
-)
-(connector
-	(pt -248 800)
-	(pt -488 800)
 	(bus)
 )
 (connector
@@ -1833,20 +1679,6 @@ agreement for further details.
 	(bus)
 )
 (connector
-	(text "collision_Smiley_Hart" (rect -358 816 -255 833)(font "Intel Clear" ))
-	(pt -248 832)
-	(pt -360 832)
-)
-(connector
-	(pt -360 832)
-	(pt -360 840)
-)
-(connector
-	(text "keypadValid" (rect -358 800 -298 817)(font "Intel Clear" ))
-	(pt -400 816)
-	(pt -248 816)
-)
-(connector
 	(text "clk" (rect -353 536 -339 553)(font "Intel Clear" ))
 	(pt -360 552)
 	(pt -328 552)
@@ -1888,6 +1720,183 @@ agreement for further details.
 	(text "address[18..0]" (rect -406 600 -340 617)(font "Intel Clear" ))
 	(pt -328 616)
 	(pt -424 616)
+	(bus)
+)
+(connector
+	(text "clk" (rect 432 360 446 377)(font "Intel Clear" ))
+	(pt 384 376)
+	(pt 504 376)
+)
+(connector
+	(text "resetN" (rect 424 376 457 388)(font "Arial" ))
+	(pt 384 392)
+	(pt 504 392)
+)
+(connector
+	(text "smileyDR" (rect 394 392 440 409)(font "Intel Clear" ))
+	(pt 384 408)
+	(pt 504 408)
+)
+(connector
+	(text "smileyRGB[7..0]" (rect 396 408 472 425)(font "Intel Clear" ))
+	(pt 384 424)
+	(pt 504 424)
+	(bus)
+)
+(connector
+	(text "HartDrawingRequest" (rect 402 424 499 441)(font "Intel Clear" ))
+	(pt 384 440)
+	(pt 504 440)
+)
+(connector
+	(text "hartRGB[7..0]" (rect 402 440 465 457)(font "Intel Clear" ))
+	(pt 384 456)
+	(pt 504 456)
+	(bus)
+)
+(connector
+	(text "BG_RGB[7..0]" (rect 402 456 466 473)(font "Intel Clear" ))
+	(pt 384 472)
+	(pt 504 472)
+	(bus)
+)
+(connector
+	(text "boardersDrawReq" (rect 402 472 486 489)(font "Intel Clear" ))
+	(pt 384 488)
+	(pt 504 488)
+)
+(connector
+	(text "MIF_VGA[7..0]" (rect 402 488 470 505)(font "Intel Clear" ))
+	(pt 384 504)
+	(pt 504 504)
+	(bus)
+)
+(connector
+	(text "RGB[7..0]" (rect 764 360 808 377)(font "Intel Clear" ))
+	(pt 752 376)
+	(pt 880 376)
+	(bus)
+)
+(connector
+	(pt -488 800)
+	(pt -480 800)
+	(bus)
+)
+(connector
+	(text "HartDrawingRequest" (rect 66 688 163 705)(font "Intel Clear" ))
+	(pt 56 704)
+	(pt 160 704)
+)
+(connector
+	(text "hartRGB[7..0]" (rect 66 704 129 721)(font "Intel Clear" ))
+	(pt 56 720)
+	(pt 160 720)
+	(bus)
+)
+(connector
+	(text "clk" (rect -336 688 -322 705)(font "Intel Clear" ))
+	(pt -248 704)
+	(pt -440 704)
+)
+(connector
+	(text "resetN" (rect -334 704 -304 721)(font "Intel Clear" ))
+	(pt -248 720)
+	(pt -440 720)
+)
+(connector
+	(text "pixelX[10..0]" (rect -334 720 -275 737)(font "Intel Clear" ))
+	(pt -248 736)
+	(pt -440 736)
+	(bus)
+)
+(connector
+	(text "pixelY[10..0]" (rect -334 736 -275 753)(font "Intel Clear" ))
+	(pt -248 752)
+	(pt -440 752)
+	(bus)
+)
+(connector
+	(pt -464 768)
+	(pt -248 768)
+	(bus)
+)
+(connector
+	(pt -464 688)
+	(pt -464 768)
+	(bus)
+)
+(connector
+	(pt -480 800)
+	(pt -480 784)
+	(bus)
+)
+(connector
+	(pt -480 784)
+	(pt -248 784)
+	(bus)
+)
+(connector
+	(text "collision_Smiley_Hart" (rect -358 800 -255 817)(font "Intel Clear" ))
+	(pt -360 816)
+	(pt -248 816)
+)
+(connector
+	(pt -360 840)
+	(pt -360 816)
+)
+(connector
+	(text "keypadValid" (rect -358 784 -298 801)(font "Intel Clear" ))
+	(pt -400 800)
+	(pt -248 800)
+)
+(connector
+	(pt 552 968)
+	(pt 552 880)
+	(bus)
+)
+(connector
+	(pt 736 816)
+	(pt 824 816)
+)
+(connector
+	(text "clk" (rect 784 816 798 833)(font "Intel Clear" ))
+	(pt 776 832)
+	(pt 824 832)
+)
+(connector
+	(text "resetN" (rect 784 832 814 849)(font "Intel Clear" ))
+	(pt 776 848)
+	(pt 824 848)
+)
+(connector
+	(text "keypadValid" (rect 680 848 740 865)(font "Intel Clear" ))
+	(pt 672 864)
+	(pt 824 864)
+)
+(connector
+	(pt 552 880)
+	(pt 824 880)
+	(bus)
+)
+(connector
+	(pt 744 896)
+	(pt 824 896)
+	(bus)
+)
+(connector
+	(text "keyPad[3..0]" (rect 464 952 524 969)(font "Intel Clear" ))
+	(pt 456 968)
+	(pt 552 968)
+	(bus)
+)
+(connector
+	(pt 552 968)
+	(pt 1112 968)
+	(bus)
+)
+(connector
+	(pt 1040 816)
+	(pt 1208 816)
 	(bus)
 )
 (junction (pt 552 968))
