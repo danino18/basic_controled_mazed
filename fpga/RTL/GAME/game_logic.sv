@@ -4,7 +4,7 @@
 // real time by a testbench.
 //
 // The bird's own autonomous motion lives in Bird_Block (a top-level object,
-// matching the course's Smiley_Block_T owning its own physics); this module
+// this module
 // only takes the bird's current position as an input for collision, and
 // drives Bird_Block's run/restart/mode/seed the same way it drives the coral
 // world below. The coral columns' player-independent motion lives in
@@ -133,7 +133,7 @@ module game_logic
       .dout  (entropy)
   );
 
-  logic inMenu, worldRun, steerRun;
+	  logic inMenu, worldRun, steerRun;
 
   assign inMenu   = (screen == ST_MENU_DIFF) || (screen == ST_MENU_OBST);
   assign worldRun = (screen == ST_PLAY);
