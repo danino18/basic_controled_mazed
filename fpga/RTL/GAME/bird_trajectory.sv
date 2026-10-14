@@ -1,6 +1,6 @@
 // Autonomous vertical motion of the bird. The bird never moves horizontally.
 //
-// EASY   - smooth sine bob from the supplied sintable (RTL/AUDIO/SinTable.sv):
+// EASY   - smooth sine bob from the supplied sintable:
 //          fully predictable, 256 frames per bob, at most 4 px per frame.
 // MEDIUM - every MEDIUM_INTERVAL frames a random bit picks up or down; the
 //          speed eases towards +-MEDIUM_SPEED. Near the top or bottom the bird

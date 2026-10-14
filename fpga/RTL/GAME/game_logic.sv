@@ -59,13 +59,13 @@ module game_logic
     // world state
     output logic signed [9:0]            mazeOffset,
     output logic signed [4:0]            mazeVy,
-    output logic [NUM_COLUMNS-1:0]       colActive,
-    output logic [NUM_COLUMNS-1:0][10:0] colX,
-    output logic [NUM_COLUMNS-1:0][8:0]  gapBase,
-    output logic [NUM_COLUMNS-1:0][9:0]  gapTop,
-    output logic [NUM_COLUMNS-1:0][9:0]  gapBottom,
+    output logic [2:0] colActive,
+    output logic [2:0][10:0] colX,
+    output logic [2:0][8:0]  gapBase,
+    output logic [2:0][9:0]  gapTop,
+    output logic [2:0][9:0]  gapBottom,
     output logic                         collision,
-    output logic [NUM_COLUMNS-1:0]       hitColumn,
+    output logic [2:0] hitColumn,
 
     // score
     output logic [2:0][3:0]              score,
