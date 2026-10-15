@@ -16,10 +16,10 @@ module Coral_Block
     input  logic                         resetN,
     input  logic [10:0]                  pixelX,
     input  logic [10:0]                  pixelY,
-    input  logic [NUM_COLUMNS-1:0]       active,
-    input  logic [NUM_COLUMNS-1:0][10:0] colX,
-    input  logic [NUM_COLUMNS-1:0][9:0]  gapTop,
-    input  logic [NUM_COLUMNS-1:0][9:0]  gapBottom,
+    input  logic [2:0]       active,
+    input  logic [2:0][10:0] colX,
+    input  logic [2:0][9:0]  gapTop,
+    input  logic [2:0][9:0]  gapBottom,
     output logic                         drawingRequest,
     output color_t                       RGBout
 );
